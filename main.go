@@ -28,10 +28,16 @@ type Post struct {
 func digest(date time.Time) error {
 	var err error
 
+	env := Environ()
+	if env["PINBOARD_TOKEN"] == "" {
+		fmt.Println("ENV PINBOARD_TOKEN not found.")
+		os.Exit(1)
+	}
+
 	v := url.Values{}
 	v.Set("dt", date.Format("2006-01-02"))
 	v.Set("format", "json")
-	v.Set("auth_token", Token)
+	v.Set("auth_token", env["PINBOARD_TOKEN"])
 
 	url := fmt.Sprintf("%s/%s?%s", BaseUrl, "get", v.Encode())
 	resp, err := http.Get(url)
@@ -52,7 +58,11 @@ func digest(date time.Time) error {
 
 	fmt.Printf("%s\n\n", date.Format(time.ANSIC))
 	for _, p := range res.Posts {
-		fmt.Printf("%s\n%s\ntags: %s\n\n", p.Description, p.Href, strings.Join(strings.Split(p.Tags, " "), ", "))
+		tag := ""
+		if p.Tags != "" {
+			tag = "tags: " + strings.Join(strings.Split(p.Tags, " "), ", ") + "\n"
+		}
+		fmt.Printf("%s\n%s\n%s\n", p.Description, p.Href, tag)
 	}
 
 	return err
